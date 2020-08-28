@@ -1,0 +1,141 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="myblog.mappers.BlogTagMapper">
+  <resultMap id="BaseResultMap" type="myblog.entity.BlogTag">
+    <id column="tag_id" jdbcType="INTEGER" property="tagId" />
+    <result column="tag_name" jdbcType="VARCHAR" property="tagName" />
+    <result column="is_deleted" jdbcType="TINYINT" property="isDeleted" />
+    <result column="create_time" jdbcType="TIMESTAMP" property="createTime" />
+  </resultMap>
+  <resultMap id="BaseBlogTagCount" type="myblog.entity.BlogTagCount">
+    <id column="tag_id" jdbcType="INTEGER" property="tagId" />
+    <result column="tag_count" jdbcType="INTEGER" property="tagCount"/>
+    <result column="tag_name" jdbcType="VARCHAR" property="tagName"/>
+  </resultMap>
+  <sql id="Base_Column_List">
+    tag_id, tag_name, is_deleted, create_time
+  </sql>
+  <select id="selectByPrimaryKey" parameterType="java.lang.Integer" resultMap="BaseResultMap">
+    select
+    <include refid="Base_Column_List" />
+    from tb_blog_tag
+    where tag_id = #{tagId,jdbcType=INTEGER}
+  </select>
+  <select id="findTagList" parameterType="map" resultMap="BaseResultMap">
+    select
+    <include refid="Base_Column_List"/>
+    from tb_blog_tag
+    where is_deleted = 0
+    order by create_time desc
+    <if test="start != null || limit != null">
+        limit #{start}, #{limit}
+    </if>
+  </select>
+  <select id="getTagCounts" resultType="java.lang.Integer">
+    select count(*)
+    from tb_blog_tag
+    where is_deleted = 0;
+  </select>
+  <select id="selectByTagName" parameterType="string" resultMap="BaseResultMap">
+    select
+    <include refid="Base_Column_List"/>
+    from tb_blog_tag
+    where tag_name = #{tagName}
+    and is_deleted = 0;
+  </select>
+  <select id="findBlogTagCount" resultMap="BaseBlogTagCount">
+    select temp2.tag_id, temp2.tag_count, tag.tag_name
+    from
+        (select tag_id, count(*) as tag_count
+         from
+            (select tbtr.tag_id
+             from tb_blog_tag_relation tbtr
+             left join tb_blog tb
+             on tb.blog_id = tbtr.blog_id
+             where tb.is_deleted = 0) as temp1
+         group by tag_id
+         order by tag_count desc
+         limit 20) as temp2
+    join tb_blog_tag tag
+    on temp2.tag_id = tag.tag_id
+    where tag.is_deleted = 0;
+  </select>
+  <delete id="deleteByPrimaryKey" parameterType="java.lang.Integer">
+    delete from tb_blog_tag
+    where tag_id = #{tagId,jdbcType=INTEGER}
+  </delete>
+  <update id="deleteBatch">
+    update tb_blog_tag
+    set is_deleted = 1
+    where tag_id in
+    <foreach collection="array" item="id" open="(" separator="," close=")">
+      #{id}
+    </foreach>
+  </update>
+  <insert id="insert" parameterType="myblog.entity.BlogTag">
+    insert into tb_blog_tag (tag_id, tag_name, is_deleted, 
+      create_time)
+    values (#{tagId,jdbcType=INTEGER}, #{tagName,jdbcType=VARCHAR}, #{isDeleted,jdbcType=TINYINT}, 
+      #{createTime,jdbcType=TIMESTAMP})
+  </insert>
+  <insert id="insertSelective" parameterType="myblog.entity.BlogTag">
+    insert into tb_blog_tag
+    <trim prefix="(" suffix=")" suffixOverrides=",">
+      <if test="tagId != null">
+        tag_id,
+      </if>
+      <if test="tagName != null">
+        tag_name,
+      </if>
+      <if test="isDeleted != null">
+        is_deleted,
+      </if>
+      <if test="createTime != null">
+        create_time,
+      </if>
+    </trim>
+    <trim prefix="values (" suffix=")" suffixOverrides=",">
+      <if test="tagId != null">
+        #{tagId,jdbcType=INTEGER},
+      </if>
+      <if test="tagName != null">
+        #{tagName,jdbcType=VARCHAR},
+      </if>
+      <if test="isDeleted != null">
+        #{isDeleted,jdbcType=TINYINT},
+      </if>
+      <if test="createTime != null">
+        #{createTime,jdbcType=TIMESTAMP},
+      </if>
+    </trim>
+  </insert>
+  <insert id="insertByNameBatchSelective" parameterType="java.util.List" useGeneratedKeys="true" keyProperty="tagId">
+      insert into tb_blog_tag (tag_name)
+      values
+      <foreach collection="list" item="item" separator="," >
+        (#{item.tagName,jdbcType=VARCHAR})
+      </foreach>
+  </insert>
+  <update id="updateByPrimaryKeySelective" parameterType="myblog.entity.BlogTag">
+    update tb_blog_tag
+    <set>
+      <if test="tagName != null">
+        tag_name = #{tagName,jdbcType=VARCHAR},
+      </if>
+      <if test="isDeleted != null">
+        is_deleted = #{isDeleted,jdbcType=TINYINT},
+      </if>
+      <if test="createTime != null">
+        create_time = #{createTime,jdbcType=TIMESTAMP},
+      </if>
+    </set>
+    where tag_id = #{tagId,jdbcType=INTEGER}
+  </update>
+  <update id="updateByPrimaryKey" parameterType="myblog.entity.BlogTag">
+    update tb_blog_tag
+    set tag_name = #{tagName,jdbcType=VARCHAR},
+      is_deleted = #{isDeleted,jdbcType=TINYINT},
+      create_time = #{createTime,jdbcType=TIMESTAMP}
+    where tag_id = #{tagId,jdbcType=INTEGER}
+  </update>
+</mapper>
